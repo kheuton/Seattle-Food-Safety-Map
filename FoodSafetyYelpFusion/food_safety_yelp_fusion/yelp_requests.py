@@ -116,6 +116,49 @@ def request(host, path, bearer_token, url_params=None):
 
     return response.json()
 
+def get_categories(name, latitude, longitude):
+    """Given a name, latitutde, and longitude, return categories
+    Args:
+        name (str): Restaurant name
+        latitude (float): Latitude (decimal)
+        longitude (float): Latitude (decimal)
+    Returns:
+        dict: Dictionary of categories
+    """
+
+    bearer_token = obtain_bearer_token(API_HOST, TOKEN_PATH)
+
+    url_params = {
+        'term': name.replace(' ', '+'),
+        'latitude': str(latitude),
+        'longitude': str(longitude),
+        'limit': SEARCH_LIMIT
+    }
+
+    response = request(API_HOST, SEARCH_PATH, bearer_token, url_params=url_params)
+
+    businesses = response.get('businesses')
+
+    if not businesses:
+        print(u'No businesses for {0} found.'.format(name))
+        return
+
+    business_id = businesses[0]['id']
+
+    print(u'{0} businesses found, querying business info ' \
+        'for the top result "{1}" ...'.format(
+            len(businesses), business_id))
+    response = get_business(bearer_token, business_id)
+
+    print(u'Result for business "{0}" found:'.format(business_id))
+
+    categories = response['categories']
+
+    titles = [category['title'] for category in categories]
+
+    return titles
+
+
 
 def search(bearer_token, term, location):
     """Query the Search API by a search term and location.
