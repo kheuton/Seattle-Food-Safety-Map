@@ -1,6 +1,6 @@
 rm(list=ls())
 
-pacman::p_load(sp, rgdal, data.table, dplyr, dtplyr)
+pacman::p_load(sp, rgdal, data.table, dplyr, dtplyr, ggplot2)
 
 load_foodspdf <- function(method="wget"){
     base <- "ftp://ftp.kingcounty.gov/gis-web/GISData/"
@@ -28,20 +28,22 @@ load_foodspdf <- function(method="wget"){
 foodspdf <- load_foodspdf()
 
 facility_inspection_count <- function(foodspdf=load_foodspdf()){
-    foodspdfsub <- unique(foodspdf@data[,list(NAME, PROGRAM_ID, DATE_INSPE)])
-    foodspdfsub[,.N, by=list(NAME, PROGRAM_ID)]
+    foodspdfsub <- unique(foodspdf@data[,list(NAME, PROGRAM_ID, 
+                                              ADDRESS, DATE_INSPE)])
+    foodspdfsub[,.N, by=list(NAME, PROGRAM_ID, ADDRESS)]
 }
 
 facility_total_score <- function(foodspdf=load_foodspdf()){
-    foodspdfsub <- unique(foodspdf@data[,list(NAME, PROGRAM_ID, DATE_INSPE, 
-                                              SCORE_INSP)])
-    foodspdfsub[,sum(SCORE_INSP), by=list(NAME, PROGRAM_ID)]
+    foodspdfsub <- unique(foodspdf@data[,list(NAME, PROGRAM_ID, ADDRESS,
+                                              DATE_INSPE, SCORE_INSP)])
+    foodspdfsub[,sum(SCORE_INSP), by=list(NAME, PROGRAM_ID, ADDRESS)]
 }
 
 raw_score <- function(foodspdf=load_foodspdf()){
     DT <- as.data.table(left_join(facility_inspection_count(foodspdf),
                                   facility_total_score(foodspdf)))
     DT[,ESTSCORE:=V1/N]
+    DT
 }
 
 ggplot(data=foodspdf@data,
@@ -50,4 +52,10 @@ ggplot(data=foodspdf@data,
 
 ggplot(data=foodspdf@data, aes(x=SCORE_INSP)) + geom_histogram()
 
+DT <- raw_score(foodspdf)
+DT <- left_join(DT, unique(foodspdf@data[,list(NAME, PROGRAM_ID, ADDRESS, 
+                                               ZIPCODE, PHONE, LONGITUDE, 
+                                               LATITUDE)]))
+DT <- as.data.table(DT)
 
+fwrite(DT, file="~/Downloads/rawrestscore.csv", row.names=FALSE)
