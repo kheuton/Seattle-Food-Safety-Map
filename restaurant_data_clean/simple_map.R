@@ -37,6 +37,7 @@ DF <- fread("~/Downloads/rawrestscore.csv")
 DF[,ZIPCODE:=substr(ZIPCODE, 1, 5)]
 DFZIP <- DF[, list(MEAN=mean(ESTSCORE)),by=ZIPCODE]
 DFZIP <- left_join(DFZIP, DF[, list(MEDIAN=median(ESTSCORE)),by=ZIPCODE]) 
+DFZIP <- left_join(DFZIP, DF[, list(N=.N),by=ZIPCODE]) 
 
 zipspdf <- load_zip()
 zipspdf@data$ZIPCODE <- as.character(zipspdf@data$ZCTA5CE10)
@@ -47,3 +48,4 @@ head(zipspdf@data)
 
 spdf2leaf(zipspdf, "MEAN", "Mean Value<br>Raw Score")
 spdf2leaf(zipspdf, "MEDIAN", "Median Value<br>Raw Score")
+spdf2leaf(zipspdf, "N", "Sample<br>Size")
